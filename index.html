@@ -153,13 +153,14 @@ svg text{font-family:"IBM Plex Mono",monospace}
     <div><div class="big r" id="k26" data-n="0" data-d="1" data-suf="%">0</div><div class="lab" id="k26Lab">In 2026 alone</div></div>
   </div>
   <div class="rule" style="margin-top:60px"></div>
-  <p class="detail" style="max-width:820px">Severe PGD = ECMO, BiVAD or other MCS after implant. Published benchmarks sit at <b>7.8% (ISHLT)</b> and <b>4.8–7.9% (UNOS)</b>. Vanderbilt reports <b>2–3%</b> in DBD and <b>4–6%</b> in DCD. <b style="color:var(--red)">Our rate is rising, not falling.</b> Deaths among severe PGD through 2025: <b>7 of 21</b>.</p>
+  <p class="detail" style="max-width:820px">Severe PGD = ECMO, BiVAD or other MCS after implant. Published benchmarks sit at <b>7.8% (ISHLT)</b> and <b>4.8–7.9% (UNOS)</b>. Vanderbilt reports <b>2–3%</b> in DBD and <b>4–6%</b> in DCD. <b style="color:var(--red)">Our rate is rising, not falling.</b> Headline denominator is the HT dashboard total (263). The year chart below covers the case-level series (228).</p>
 </section>
 
 <!-- 4 chart -->
 <section class="s">
   <div class="eb"><b>01</b> Where we stand</div>
   <h2>The rate is <em>going the wrong way</em></h2>
+  <div class="mono" style="position:absolute;left:80px;bottom:56px;font-size:10px;letter-spacing:.14em;color:var(--mute)">CASE-LEVEL SERIES · 228 OF 263</div>
   <div style="display:flex;gap:40px;margin-top:20px;align-items:flex-start">
     <svg id="c1" viewBox="0 0 780 400" width="780"></svg>
     <div class="pan" style="position:static;width:300px;margin-top:20px" id="c1pan"><div class="k">Hover a year</div><h3>2021 – 2026</h3><p>Volume grew and the rate rose with it. 2026 is the worst year in the series.</p></div>
@@ -187,12 +188,19 @@ svg text{font-family:"IBM Plex Mono",monospace}
 
 <!-- 6 forest -->
 <section class="s">
-  <div class="eb"><b>01</b> What predicts severe PGD at TGH · n = 182, 20 events</div>
+  <div class="eb"><b>01</b> What predicts severe PGD at TGH · n = 263 with 37 events</div>
   <h2>Three signals, <em>one model</em></h2>
-  <div style="display:flex;gap:40px;margin-top:24px">
-    <svg id="forest" viewBox="0 0 760 330" width="760"></svg>
-    <div class="pan" style="position:static;width:320px" id="fpan"><div class="k">Hover a row</div><h3>Multivariable logistic regression</h3><p>Pseudo R² 0.15 · model p = 0.004. Post-OCS DCD PGD: 1 of 6.</p></div>
+  <div style="display:flex;gap:36px;margin-top:18px">
+    <svg id="forest" viewBox="0 0 760 270" width="700"></svg>
+    <div class="pan" style="position:static;width:320px" id="fpan"><div class="k">Hover a row</div><h3>Firth penalized ML</h3><p>Jeffreys prior, profile-likelihood CIs, LRT p — appropriate at this event count; plain ML is biased away from the null here. Model p = 0.027 · McFadden R² 0.074. Red = p &lt; 0.05.</p></div>
   </div>
+
+  <div style="margin-top:20px;border:1px solid var(--gold);padding:16px 20px;max-width:1120px">
+    <div style="color:var(--gold);font-weight:600;font-size:14px;letter-spacing:.02em">THE CAVEAT — the DCD row is the least stable number in this table</div>
+    <p style="margin:8px 0 0;font-size:13.5px;line-height:1.5;color:var(--bone)">All 12 DCD transplants are 2025–26, carrying 5 PGD events. Four of them lack an ischaemic time, so this model silently drops 3 of those 5 events — DCD here rests on <b>8 patients and 2 events</b>. Refitting without ischaemic time keeps all 12: aOR <b style="color:var(--gold)">6.61 (1.86–22.79), p = 0.004</b> — same direction, far tighter.</p>
+    <p style="margin:6px 0 0;font-size:12px;color:var(--mute)">In that fit LVAD bridge is 2.28 (1.00–5.07) p = 0.050 and pre-op ECMO 2.70 (1.02–6.75) p = 0.045.</p>
+  </div>
+  <p style="margin-top:14px;font-size:11px;line-height:1.55;color:var(--mute);max-width:1120px">Traferox × ischaemic-time interaction dropped: driven by complete separation (DCD + Traferox = 2/2 PGD, DCD without = 0/6 in the modelled subset), which rendered the main effect uninterpretable.<br>Source: Realtime Dashboard HT (HTX DASHBOARD NEW OUTCOMES.xlsx) + Donor QI dashboard · severe PGD = post-transplant ECMO or Centrimag within 24 h · generated 2026-09-14</p>
 </section>
 
 <!-- 7 section -->
@@ -496,8 +504,10 @@ const DATA={
   dialMax:20,                        // gauge ceiling - must exceed our rate
   vanderbiltPerYear:210
 };
-DATA.total=DATA.transplants.reduce((a,b)=>a+b,0);
-DATA.totalPGD=DATA.severePGD.reduce((a,b)=>a+b,0);
+DATA.seriesTotal=DATA.transplants.reduce((a,b)=>a+b,0);   // sums the year chart = 228
+DATA.seriesPGD=DATA.severePGD.reduce((a,b)=>a+b,0);
+DATA.total=263;        // program total, HT dashboard
+DATA.totalPGD=37;      // severe PGD events against that denominator
 DATA.rate=DATA.totalPGD/DATA.total*100;
 DATA.rate2026=DATA.severePGD[5]/DATA.transplants[5]*100;
 DATA.perYear=Math.round(DATA.total/DATA.years.length);
@@ -560,7 +570,7 @@ document.querySelectorAll('.fc').forEach(c=>c.onclick=()=>c.classList.toggle('on
  const bench=T+ph-ph*DATA.benchmarks.ishlt/25;svg.appendChild(el('line',{x1:L,x2:W-20,y1:bench,y2:bench,stroke:'#7c8699','stroke-dasharray':'2 6'}));const bt=el('text',{x:W-20,y:bench-6,'text-anchor':'end','font-size':11,fill:'#7c8699'});bt.textContent='ISHLT '+DATA.benchmarks.ishlt+'%';svg.appendChild(bt)})();
 /* forest */
 (function(){const svg=document.getElementById('forest'),NS='http://www.w3.org/2000/svg';function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e}
- const rows=[['DCD donor',2.209,100,28.3,'0.010',1,'A DCD donor carried a 28-fold higher odds of severe PGD — the dominant signal, with a wide interval.'],['LVAD bridge',1.302,11.6,3.89,'0.015',1,'Bridging on a durable LVAD nearly quadrupled the odds.'],['Preop ECMO / CMAG',0.671,8.35,2.37,'0.180',0,'Trend only; not significant.'],['Total ischaemic time · per min',1.0,1.03,1.02,'0.046',1,'2% per minute — an hour adds roughly 3× the odds.'],['Traferox · main effect',0.066,100,5.94,'0.437',0,'Not significant.'],['Traferox × ischaemic time',0.973,1.01,0.99,'0.335',0,'No interaction detected.']];
+ const rows=[['DCD donor',1.16,40.97,7.61,'0.036',1,'Largest point estimate - but see the caveat. Rests on 8 patients and 2 events in this fit.'],['LVAD bridge',0.97,5.53,2.34,'0.058',0,'Roughly doubles the odds; the interval touches 1.'],['Ischaemic time · per h',1.04,2.14,1.48,'0.032',1,'About 1.5x per extra hour.'],['Pre-op ECMO',0.78,5.90,2.23,'0.129',0,'Trend only; overlaps the PGD definition.'],['Traferox · main effect',0.35,2.04,0.86,'0.728',0,'No effect.']];
  const L=250,R=620,X=v=>L+(Math.log10(v)-Math.log10(.05))/(Math.log10(100)-Math.log10(.05))*(R-L);const pan=document.getElementById('fpan');
  svg.appendChild(el('line',{x1:X(1),x2:X(1),y1:10,y2:310,stroke:'#7c8699','stroke-dasharray':'2 4'}));[0.1,1,10,100].forEach(v=>{const t=el('text',{x:X(v),y:325,'text-anchor':'middle','font-size':11,fill:'#7c8699'});t.textContent=v;svg.appendChild(t)});
  rows.forEach((r,k)=>{const y=30+k*48;const col=r[5]?'var(--red)':'#7c8699';const g=el('g',{style:'cursor:pointer'});g.appendChild(el('rect',{x:0,y:y-18,width:760,height:40,fill:'transparent'}));
